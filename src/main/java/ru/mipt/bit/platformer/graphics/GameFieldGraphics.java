@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer;
+package ru.mipt.bit.platformer.graphics;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.maps.MapRenderer;
@@ -11,14 +11,14 @@ import ru.mipt.bit.platformer.util.TileMovement;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createSingleLayerMapRenderer;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.getSingleLayer;
 
-public class GameField {
+public class GameFieldGraphics {
 
     private TiledMap level;
     private MapRenderer levelRenderer;
     private TiledMapTileLayer groundLayer;
     private TileMovement tileMovement;
 
-    public GameField(String mapPath, Batch batch) {
+    public GameFieldGraphics(String mapPath, Batch batch) {
         level = new TmxMapLoader().load(mapPath);
         levelRenderer = createSingleLayerMapRenderer(level, batch);
         groundLayer = getSingleLayer(level);
