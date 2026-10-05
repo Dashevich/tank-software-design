@@ -4,9 +4,8 @@ import com.badlogic.gdx.math.GridPoint2;
 
 import java.util.List;
 
-public class Tank {
+public class Tank implements Movable, Controllable {
 
-    private static final float MOVEMENT_SPEED = 0.4f;
     private static final float FINISHED_MOVEMENT_PROGRESS = 1f;
     private static final float FLOAT_EQUALITY_THRESHOLD = 0.000001f;
 
@@ -14,25 +13,31 @@ public class Tank {
     private GridPoint2 destinationCoordinates;
     private float movementProgress = FINISHED_MOVEMENT_PROGRESS;
     private float rotation;
+    private float movementSpeed;
 
-    public Tank(GridPoint2 startCoordinates) {
+    public Tank(GridPoint2 startCoordinates, float movementSpeed) {
         destinationCoordinates = new GridPoint2(startCoordinates);
         coordinates = new GridPoint2(destinationCoordinates);
         rotation = Direction.RIGHT.getRotation();
+        this.movementSpeed = movementSpeed;
     }
 
+    @Override
     public GridPoint2 getCoordinates() {
         return coordinates;
     }
 
+    @Override
     public GridPoint2 getDestinationCoordinates() {
         return destinationCoordinates;
     }
 
+    @Override
     public float getMovementProgress() {
         return movementProgress;
     }
 
+    @Override
     public float getRotation() {
         return rotation;
     }
@@ -41,21 +46,22 @@ public class Tank {
         return isEqual(movementProgress, FINISHED_MOVEMENT_PROGRESS);
     }
 
-    public void tryMove(Direction direction, GameField field, List<Tree> trees) {
+    @Override
+    public void tryMove(Direction direction, Bounds bounds, List<Obstacle> obstacles) {
         if (!hasFinishedMovement()) {
             return;
         }
         rotation = direction.getRotation();
         GridPoint2 nextCoordinates = direction.nextCoordinates(coordinates);
-        if (field.contains(nextCoordinates) && !isOccupied(nextCoordinates, trees)) {
+        if (bounds.contains(nextCoordinates) && !isOccupied(nextCoordinates, obstacles)) {
             destinationCoordinates.set(nextCoordinates);
             movementProgress = 0f;
         }
     }
 
-    private static boolean isOccupied(GridPoint2 coordinates, List<Tree> trees) {
-        for (Tree tree : trees) {
-            if (tree.occupies(coordinates)) {
+    private static boolean isOccupied(GridPoint2 coordinates, List<Obstacle> obstacles) {
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle.occupies(coordinates)) {
                 return true;
             }
         }
@@ -63,7 +69,7 @@ public class Tank {
     }
 
     public void update(float deltaTime) {
-        movementProgress = continueProgress(movementProgress, deltaTime, MOVEMENT_SPEED);
+        movementProgress = continueProgress(movementProgress, deltaTime, movementSpeed);
         if (hasFinishedMovement()) {
             coordinates.set(destinationCoordinates);
         }

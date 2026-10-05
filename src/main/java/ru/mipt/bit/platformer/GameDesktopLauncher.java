@@ -8,6 +8,8 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.GridPoint2;
+import com.badlogic.gdx.math.Interpolation;
+import ru.mipt.bit.platformer.graphics.Drawable;
 import ru.mipt.bit.platformer.graphics.GameFieldGraphics;
 import ru.mipt.bit.platformer.graphics.TankGraphics;
 import ru.mipt.bit.platformer.graphics.TreeGraphics;
@@ -16,6 +18,7 @@ import ru.mipt.bit.platformer.input.KeyboardHandler;
 import ru.mipt.bit.platformer.input.MoveCommand;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.GameField;
+import ru.mipt.bit.platformer.model.Obstacle;
 import ru.mipt.bit.platformer.model.Tank;
 import ru.mipt.bit.platformer.model.Tree;
 
@@ -31,17 +34,18 @@ public class GameDesktopLauncher implements ApplicationListener {
     private static final int WINDOW_HEIGHT = GameField.HEIGHT * TILE_SIZE_PX;
     private static final int TANK_START_X = 1;
     private static final int TANK_START_Y = 1;
+    private static final float TANK_MOVEMENT_SPEED = 0.4f;
     private static final int TREE_X = 1;
     private static final int TREE_Y = 3;
+    private static final float TREE_ROTATION = 0f;
     private static final float BACKGROUND_BLUE = 0.2f;
 
     private Batch batch;
     private GameField gameField;
     private Tank tank;
-    private List<Tree> trees;
+    private List<Obstacle> obstacles;
     private GameFieldGraphics gameFieldGraphics;
-    private TankGraphics tankGraphics;
-    private List<TreeGraphics> treeGraphicsList;
+    private List<Drawable> drawables;
     private KeyboardHandler keyboardHandler;
 
     @Override
@@ -49,20 +53,19 @@ public class GameDesktopLauncher implements ApplicationListener {
         batch = new SpriteBatch();
 
         gameField = new GameField(GameField.WIDTH, GameField.HEIGHT);
-        gameFieldGraphics = new GameFieldGraphics("level.tmx", batch);
-        tank = new Tank(new GridPoint2(TANK_START_X, TANK_START_Y));
-        tankGraphics = new TankGraphics("images/tank_blue.png", tank);
+        gameFieldGraphics = new GameFieldGraphics("level.tmx", batch, Interpolation.smooth);
+        tank = new Tank(new GridPoint2(TANK_START_X, TANK_START_Y), TANK_MOVEMENT_SPEED);
 
-        trees = new ArrayList<Tree>();
-        treeGraphicsList = new ArrayList<TreeGraphics>();
+        obstacles = new ArrayList<Obstacle>();
+        drawables = new ArrayList<Drawable>();
+        drawables.add(new TankGraphics("images/tank_blue.png", tank, gameFieldGraphics.getTileMovement()));
         addTree(new GridPoint2(TREE_X, TREE_Y));
 
         keyboardHandler = new KeyboardHandler(new GdxKeyboard());
-        keyboardHandler.bind(new MoveCommand(tank, gameField, trees, Direction.UP), Input.Keys.UP, Input.Keys.W);
-        keyboardHandler.bind(new MoveCommand(tank, gameField, trees, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
-        keyboardHandler.bind(new MoveCommand(tank, gameField, trees, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
-        keyboardHandler.bind(new MoveCommand(tank, gameField, trees, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
-        // later: keyboardHandler.bind(new ShootCommand(tank), Input.Keys.SPACE);
+        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.UP), Input.Keys.UP, Input.Keys.W);
+        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
+        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
+        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
     }
 
     @Override
@@ -75,9 +78,8 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         gameFieldGraphics.render();
         batch.begin();
-        tankGraphics.draw(batch, gameFieldGraphics.getTileMovement());
-        for (TreeGraphics treeGraphics : treeGraphicsList) {
-            treeGraphics.draw(batch);
+        for (Drawable drawable : drawables) {
+            drawable.draw(batch);
         }
         batch.end();
     }
@@ -99,10 +101,9 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void dispose() {
-        for (TreeGraphics treeGraphics : treeGraphicsList) {
-            treeGraphics.dispose();
+        for (Drawable drawable : drawables) {
+            drawable.dispose();
         }
-        tankGraphics.dispose();
         gameFieldGraphics.dispose();
         batch.dispose();
     }
@@ -115,11 +116,12 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     private void addTree(GridPoint2 coordinates) {
         Tree tree = new Tree(coordinates);
-        trees.add(tree);
-        treeGraphicsList.add(new TreeGraphics(
+        obstacles.add(tree);
+        drawables.add(new TreeGraphics(
                 "images/greenTree.png",
                 tree,
-                gameFieldGraphics.getGroundLayer()
+                gameFieldGraphics.getGroundLayer(),
+                TREE_ROTATION
         ));
     }
 }

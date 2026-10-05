@@ -2,7 +2,7 @@ package ru.mipt.bit.platformer.model;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-public class GameField {
+public class GameField implements Bounds {
 
     public static final int WIDTH = 10;
     public static final int HEIGHT = 8;
@@ -23,6 +23,7 @@ public class GameField {
         return height;
     }
 
+    @Override
     public boolean contains(GridPoint2 coordinates) {
         return coordinates.x >= 0
                 && coordinates.y >= 0

@@ -5,8 +5,8 @@ import com.badlogic.gdx.math.GridPoint2;
 import org.junit.Test;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.GameField;
+import ru.mipt.bit.platformer.model.Obstacle;
 import ru.mipt.bit.platformer.model.Tank;
-import ru.mipt.bit.platformer.model.Tree;
 
 import java.util.Collections;
 
@@ -59,9 +59,9 @@ public class KeyboardHandlerTest {
     @Test
     public void movesTankOnArrowKey() {
         FakeKeyboard keyboard = new FakeKeyboard();
-        Tank tank = new Tank(new GridPoint2(1, 1));
+        Tank tank = new Tank(new GridPoint2(1, 1), 0.4f);
         KeyboardHandler handler = new KeyboardHandler(keyboard);
-        handler.bind(new MoveCommand(tank, new GameField(GameField.WIDTH, GameField.HEIGHT), Collections.<Tree>emptyList(), Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
+        handler.bind(new MoveCommand(tank, new GameField(GameField.WIDTH, GameField.HEIGHT), Collections.<Obstacle>emptyList(), Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
 
         keyboard.press(Input.Keys.DOWN);
         handler.handle();
