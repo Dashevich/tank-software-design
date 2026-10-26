@@ -9,6 +9,10 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
+import ru.mipt.bit.platformer.control.MovementStrategy;
+import ru.mipt.bit.platformer.control.PlayerMovementStrategy;
+import ru.mipt.bit.platformer.control.RandomAiMovementStrategy;
+import ru.mipt.bit.platformer.control.TankController;
 import ru.mipt.bit.platformer.graphics.Drawable;
 import ru.mipt.bit.platformer.graphics.GameFieldGraphics;
 import ru.mipt.bit.platformer.graphics.TankGraphics;
@@ -45,12 +49,13 @@ public class GameDesktopLauncher implements ApplicationListener {
     private static final String LEVEL_FILE = "/level.txt";
     private static final String RANDOM_LEVEL_ARG = "random";
     private static final int RANDOM_OBSTACLE_COUNT = 10;
+    private static final int AI_TANK_COUNT = 3;
 
     private LevelGenerator levelGenerator;
     private Batch batch;
     private GameField gameField;
-    private Tank tank;
     private List<Obstacle> obstacles;
+    private List<TankController> tankControllers;
     private GameFieldGraphics gameFieldGraphics;
     private List<Drawable> drawables;
     private KeyboardHandler keyboardHandler;
@@ -67,20 +72,21 @@ public class GameDesktopLauncher implements ApplicationListener {
         gameFieldGraphics = new GameFieldGraphics("level.tmx", batch, Interpolation.smooth);
 
         Level level = levelGenerator.generate();
-        tank = new Tank(level.getPlayerStart(), TANK_MOVEMENT_SPEED);
-
         obstacles = new ArrayList<Obstacle>();
         drawables = new ArrayList<Drawable>();
-        drawables.add(new TankGraphics("images/tank_blue.png", tank, gameFieldGraphics.getTileMovement()));
+        tankControllers = new ArrayList<TankController>();
+
         for (GridPoint2 treeCoordinates : level.getTreeCoordinates()) {
             addTree(treeCoordinates);
         }
 
-        keyboardHandler = new KeyboardHandler(new GdxKeyboard());
-        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.UP), Input.Keys.UP, Input.Keys.W);
-        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
-        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
-        keyboardHandler.bind(new MoveCommand(tank, gameField, obstacles, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
+        Tank playerTank = addTank(level.getPlayerStart(), new PlayerMovementStrategy());
+        bindPlayerControls(playerTank);
+
+        Random aiRandom = new Random();
+        for (GridPoint2 aiStart : level.getAiTankStarts()) {
+            addTank(aiStart, new RandomAiMovementStrategy(aiRandom));
+        }
     }
 
     @Override
@@ -89,7 +95,11 @@ public class GameDesktopLauncher implements ApplicationListener {
         Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
 
         keyboardHandler.handle();
-        tank.update(Gdx.graphics.getDeltaTime());
+        float deltaTime = Gdx.graphics.getDeltaTime();
+        for (TankController controller : tankControllers) {
+            controller.act();
+            controller.update(deltaTime);
+        }
 
         gameFieldGraphics.render();
         batch.begin();
@@ -130,13 +140,42 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     private static LevelGenerator createLevelGenerator(String[] args) {
+        Random random = new Random();
         if (args.length > 0 && RANDOM_LEVEL_ARG.equals(args[0])) {
-            return new RandomLevelGenerator(GameField.WIDTH, GameField.HEIGHT, RANDOM_OBSTACLE_COUNT, new Random());
+            return new RandomLevelGenerator(
+                    GameField.WIDTH,
+                    GameField.HEIGHT,
+                    RANDOM_OBSTACLE_COUNT,
+                    AI_TANK_COUNT,
+                    random
+            );
         }
-        return new FileLevelGenerator(new InputStreamReader(
-                GameDesktopLauncher.class.getResourceAsStream(LEVEL_FILE),
-                StandardCharsets.UTF_8
-        ));
+        return new FileLevelGenerator(
+                new InputStreamReader(
+                        GameDesktopLauncher.class.getResourceAsStream(LEVEL_FILE),
+                        StandardCharsets.UTF_8
+                ),
+                GameField.WIDTH,
+                GameField.HEIGHT,
+                AI_TANK_COUNT,
+                random
+        );
+    }
+
+    private Tank addTank(GridPoint2 start, MovementStrategy strategy) {
+        Tank tank = new Tank(start, TANK_MOVEMENT_SPEED);
+        obstacles.add(tank);
+        drawables.add(new TankGraphics("images/tank_blue.png", tank, gameFieldGraphics.getTileMovement()));
+        tankControllers.add(new TankController(tank, strategy, gameField, obstacles));
+        return tank;
+    }
+
+    private void bindPlayerControls(Tank playerTank) {
+        keyboardHandler = new KeyboardHandler(new GdxKeyboard());
+        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.UP), Input.Keys.UP, Input.Keys.W);
+        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
+        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
+        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
     }
 
     private void addTree(GridPoint2 coordinates) {
