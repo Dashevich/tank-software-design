@@ -7,7 +7,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public class FileLevelGenerator implements LevelGenerator {
 
@@ -16,9 +20,17 @@ public class FileLevelGenerator implements LevelGenerator {
     private static final char EMPTY = '_';
 
     private Reader source;
+    private int width;
+    private int height;
+    private int aiTankCount;
+    private Random random;
 
-    public FileLevelGenerator(Reader source) {
+    public FileLevelGenerator(Reader source, int width, int height, int aiTankCount, Random random) {
         this.source = source;
+        this.width = width;
+        this.height = height;
+        this.aiTankCount = aiTankCount;
+        this.random = random;
     }
 
     @Override
@@ -49,7 +61,32 @@ public class FileLevelGenerator implements LevelGenerator {
         if (playerStart == null) {
             throw new IllegalArgumentException("No player");
         }
-        return new Level(playerStart, treeCoordinates);
+
+        List<GridPoint2> aiTankStarts = placeAiTanks(playerStart, treeCoordinates);
+        return new Level(playerStart, treeCoordinates, aiTankStarts);
+    }
+
+    private List<GridPoint2> placeAiTanks(GridPoint2 playerStart, List<GridPoint2> treeCoordinates) {
+        Set<GridPoint2> taken = new HashSet<GridPoint2>();
+        taken.add(playerStart);
+        taken.addAll(treeCoordinates);
+
+        List<GridPoint2> freeCells = new ArrayList<GridPoint2>();
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                GridPoint2 cell = new GridPoint2(x, y);
+                if (!taken.contains(cell)) {
+                    freeCells.add(cell);
+                }
+            }
+        }
+
+        if (aiTankCount > freeCells.size()) {
+            throw new IllegalArgumentException("Too many AI tanks");
+        }
+
+        Collections.shuffle(freeCells, random);
+        return freeCells.subList(0, aiTankCount);
     }
 
     private List<String> readLines() {
