@@ -15,10 +15,13 @@ public class TankTest {
 
     private static final GameField FIELD = new GameField(GameField.WIDTH, GameField.HEIGHT);
     private static final float MOVEMENT_SPEED = 0.4f;
+    private static final int HEALTH = 1;
+    private static final int BULLET_DAMAGE = 1;
+    private static final float BULLET_SPEED = 0.15f;
 
     @Test
     public void startsIdleAtGivenCell() {
-        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        Tank tank = tankAt(1, 1);
 
         assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
@@ -26,24 +29,24 @@ public class TankTest {
         assertTrue(tank.hasFinishedMovement());
         assertTrue(tank.occupies(new GridPoint2(1, 1)));
         assertFalse(tank.occupies(new GridPoint2(2, 1)));
+        assertEquals(HEALTH, tank.getHealth());
     }
 
     @Test
-    public void tryMoveChangesDestinationAndRotation() {
-        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+    public void tryMoveChangesDestinationAndOrientation() {
+        Tank tank = tankAt(1, 1);
 
         tank.tryMove(Direction.UP, FIELD, Collections.<Obstacle>emptyList());
 
         assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(1, 2), tank.getDestinationCoordinates());
-        assertEquals(90f, tank.getRotation(), 0.000001f);
+        assertEquals(Direction.UP, tank.getOrientation());
         assertFalse(tank.hasFinishedMovement());
-        assertEquals(0f, tank.getMovementProgress(), 0.000001f);
     }
 
     @Test
     public void occupiesBothCellsWhileMoving() {
-        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        Tank tank = tankAt(1, 1);
         tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
 
         assertTrue(tank.occupies(new GridPoint2(1, 1)));
@@ -53,34 +56,32 @@ public class TankTest {
 
     @Test
     public void tryMoveOntoObstacleOnlyRotates() {
-        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        Tank tank = tankAt(1, 1);
         List<Obstacle> obstacles = new ArrayList<Obstacle>();
         obstacles.add(new OccupiedCell(new GridPoint2(1, 2)));
 
         tank.tryMove(Direction.UP, FIELD, obstacles);
 
-        assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
-        assertEquals(90f, tank.getRotation(), 0.000001f);
+        assertEquals(Direction.UP, tank.getOrientation());
         assertTrue(tank.hasFinishedMovement());
     }
 
     @Test
     public void tryMoveOutsideFieldOnlyRotates() {
-        Tank tank = new Tank(new GridPoint2(0, 1), MOVEMENT_SPEED);
+        Tank tank = tankAt(0, 1);
 
         tank.tryMove(Direction.LEFT, FIELD, Collections.<Obstacle>emptyList());
 
-        assertEquals(new GridPoint2(0, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(0, 1), tank.getDestinationCoordinates());
-        assertEquals(-180f, tank.getRotation(), 0.000001f);
+        assertEquals(Direction.LEFT, tank.getOrientation());
         assertTrue(tank.hasFinishedMovement());
     }
 
     @Test
     public void cannotEnterDestinationCellOfMovingTank() {
-        Tank moving = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
-        Tank other = new Tank(new GridPoint2(3, 1), MOVEMENT_SPEED);
+        Tank moving = tankAt(1, 1);
+        Tank other = tankAt(3, 1);
         List<Obstacle> obstacles = new ArrayList<Obstacle>();
         obstacles.add(moving);
         obstacles.add(other);
@@ -95,8 +96,8 @@ public class TankTest {
 
     @Test
     public void cannotEnterStartCellOfMovingTank() {
-        Tank moving = new Tank(new GridPoint2(2, 1), MOVEMENT_SPEED);
-        Tank other = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        Tank moving = tankAt(2, 1);
+        Tank other = tankAt(1, 1);
         List<Obstacle> obstacles = new ArrayList<Obstacle>();
         obstacles.add(moving);
         obstacles.add(other);
@@ -110,44 +111,65 @@ public class TankTest {
     }
 
     @Test
-    public void tryMoveIgnoredWhileMoving() {
-        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
-        List<Obstacle> obstacles = Collections.emptyList();
-        tank.tryMove(Direction.RIGHT, FIELD, obstacles);
-
-        tank.tryMove(Direction.UP, FIELD, obstacles);
-
-        assertEquals(new GridPoint2(2, 1), tank.getDestinationCoordinates());
-        assertEquals(0f, tank.getRotation(), 0.000001f);
-    }
-
-    @Test
-    public void updateAdvancesProgressAndFinishesMovement() {
-        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+    public void liveAdvancesProgressAndFinishesMovement() {
+        Tank tank = tankAt(1, 1);
         tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
 
-        tank.update(0.2f);
-
+        tank.live(0.2f);
         assertEquals(0.5f, tank.getMovementProgress(), 0.000001f);
-        assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
 
-        tank.update(0.2f);
-
+        tank.live(0.2f);
         assertTrue(tank.hasFinishedMovement());
         assertEquals(new GridPoint2(2, 1), tank.getCoordinates());
-        assertTrue(tank.occupies(new GridPoint2(2, 1)));
-        assertFalse(tank.occupies(new GridPoint2(1, 1)));
     }
 
     @Test
-    public void slowerSpeedTakesLongerToFinishMovement() {
-        Tank tank = new Tank(new GridPoint2(1, 1), 0.8f);
-        tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
+    public void takeDamageDestroysTankAtZeroOrBelow() {
+        Tank tank = tankAt(1, 1);
 
-        tank.update(0.2f);
+        tank.takeDamage(1);
 
-        assertEquals(0.25f, tank.getMovementProgress(), 0.000001f);
-        assertFalse(tank.hasFinishedMovement());
+        assertEquals(0, tank.getHealth());
+        assertTrue(tank.isDestroyed());
+    }
+
+    @Test
+    public void shootAddsBulletInFrontOfTank() {
+        LogicalLevel level = new LogicalLevel(FIELD);
+        Tank tank = tankAt(1, 1);
+        level.add(tank);
+
+        tank.shoot(level);
+
+        assertEquals(2, level.getEntities().size());
+        Bullet bullet = findBullet(level);
+        assertEquals(new GridPoint2(2, 1), bullet.getCoordinates());
+        assertEquals(Direction.RIGHT, bullet.getDirection());
+        assertEquals(tank, bullet.getOwner());
+    }
+
+    @Test
+    public void shootDoesNothingAtFieldEdge() {
+        LogicalLevel level = new LogicalLevel(FIELD);
+        Tank tank = tankAt(GameField.WIDTH - 1, 1);
+        level.add(tank);
+
+        tank.shoot(level);
+
+        assertEquals(1, level.getEntities().size());
+    }
+
+    private static Tank tankAt(int x, int y) {
+        return new Tank(new GridPoint2(x, y), MOVEMENT_SPEED, HEALTH, BULLET_DAMAGE, BULLET_SPEED);
+    }
+
+    private static Bullet findBullet(LogicalLevel level) {
+        for (LevelEntity entity : level.getEntities()) {
+            if (entity instanceof Bullet) {
+                return (Bullet) entity;
+            }
+        }
+        throw new AssertionError("Bullet not found");
     }
 
     private static class OccupiedCell implements Obstacle {

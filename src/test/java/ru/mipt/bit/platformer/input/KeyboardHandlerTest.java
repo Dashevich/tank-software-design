@@ -5,10 +5,11 @@ import com.badlogic.gdx.math.GridPoint2;
 import org.junit.Test;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.GameField;
-import ru.mipt.bit.platformer.model.Obstacle;
+import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -29,19 +30,22 @@ public class KeyboardHandlerTest {
     }
 
     @Test
-    public void doesNotExecuteCommandWhenKeyIsNotPressed() {
+    public void collectAddsCommandsWithoutExecuting() {
         FakeKeyboard keyboard = new FakeKeyboard();
         RecordingCommand command = new RecordingCommand();
         KeyboardHandler handler = new KeyboardHandler(keyboard);
         handler.bind(command, Input.Keys.SPACE);
+        keyboard.press(Input.Keys.SPACE);
 
-        handler.handle();
+        List<Command> commands = new ArrayList<Command>();
+        handler.collect(commands);
 
+        assertEquals(1, commands.size());
         assertEquals(0, command.calls);
     }
 
     @Test
-    public void canBindAdditionalCommandsWithoutChangingExistingOnes() {
+    public void canBindShootSeparatelyFromMove() {
         FakeKeyboard keyboard = new FakeKeyboard();
         RecordingCommand moveCommand = new RecordingCommand();
         RecordingCommand shootCommand = new RecordingCommand();
@@ -59,16 +63,18 @@ public class KeyboardHandlerTest {
     @Test
     public void movesTankOnArrowKey() {
         FakeKeyboard keyboard = new FakeKeyboard();
-        Tank tank = new Tank(new GridPoint2(1, 1), 0.4f);
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), 0.4f, 1, 1, 0.15f);
+        level.add(tank);
         KeyboardHandler handler = new KeyboardHandler(keyboard);
-        handler.bind(new MoveCommand(tank, new GameField(GameField.WIDTH, GameField.HEIGHT), Collections.<Obstacle>emptyList(), Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
+        handler.bind(new MoveCommand(tank, level, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
 
         keyboard.press(Input.Keys.DOWN);
         handler.handle();
 
         assertEquals(new GridPoint2(1, 0), tank.getDestinationCoordinates());
         assertFalse(tank.hasFinishedMovement());
-        assertEquals(-90f, tank.getRotation(), 0.000001f);
+        assertEquals(Direction.DOWN, tank.getOrientation());
     }
 
     private static class RecordingCommand implements Command {

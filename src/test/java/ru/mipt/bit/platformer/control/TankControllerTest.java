@@ -2,9 +2,12 @@ package ru.mipt.bit.platformer.control;
 
 import com.badlogic.gdx.math.GridPoint2;
 import org.junit.Test;
+import ru.mipt.bit.platformer.input.Command;
+import ru.mipt.bit.platformer.input.MoveCommand;
+import ru.mipt.bit.platformer.input.ShootCommand;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.GameField;
-import ru.mipt.bit.platformer.model.Obstacle;
+import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 
 import java.util.ArrayList;
@@ -16,69 +19,70 @@ import static org.junit.Assert.assertTrue;
 
 public class TankControllerTest {
 
-    private static final GameField FIELD = new GameField(GameField.WIDTH, GameField.HEIGHT);
     private static final float SPEED = 0.4f;
 
     @Test
-    public void playerStrategyDoesNotMoveTank() {
-        Tank tank = new Tank(new GridPoint2(1, 1), SPEED);
-        List<Obstacle> obstacles = new ArrayList<Obstacle>();
-        obstacles.add(tank);
-        TankController controller = new TankController(tank, new PlayerMovementStrategy(), FIELD, obstacles);
+    public void playerStrategyAddsNoCommands() {
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), SPEED, 1, 1, 0.15f);
+        level.add(tank);
+        TankController controller = new TankController(tank, new PlayerActionStrategy(), level);
+        List<Command> commands = new ArrayList<Command>();
 
-        controller.act();
+        controller.collectAction(commands);
 
-        assertTrue(tank.hasFinishedMovement());
-        assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
+        assertTrue(commands.isEmpty());
     }
 
     @Test
-    public void aiStrategyMovesTankWithCommand() {
-        Tank tank = new Tank(new GridPoint2(1, 1), SPEED);
-        List<Obstacle> obstacles = new ArrayList<Obstacle>();
-        obstacles.add(tank);
+    public void fixedMoveStrategyCreatesMoveCommand() {
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), SPEED, 1, 1, 0.15f);
+        level.add(tank);
         TankController controller = new TankController(
                 tank,
-                new FixedDirectionStrategy(Direction.RIGHT),
-                FIELD,
-                obstacles
+                new FixedMoveStrategy(Direction.RIGHT),
+                level
         );
+        List<Command> commands = new ArrayList<Command>();
 
-        controller.act();
+        controller.collectAction(commands);
+        commands.get(0).execute();
 
+        assertEquals(1, commands.size());
+        assertTrue(commands.get(0) instanceof MoveCommand);
         assertFalse(tank.hasFinishedMovement());
         assertEquals(new GridPoint2(2, 1), tank.getDestinationCoordinates());
     }
 
     @Test
-    public void updateDelegatesToTank() {
-        Tank tank = new Tank(new GridPoint2(1, 1), SPEED);
-        List<Obstacle> obstacles = new ArrayList<Obstacle>();
-        obstacles.add(tank);
+    public void ignoresRemovedTank() {
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), SPEED, 1, 1, 0.15f);
+        level.add(tank);
         TankController controller = new TankController(
                 tank,
-                new FixedDirectionStrategy(Direction.RIGHT),
-                FIELD,
-                obstacles
+                new FixedMoveStrategy(Direction.RIGHT),
+                level
         );
+        level.remove(tank);
+        List<Command> commands = new ArrayList<Command>();
 
-        controller.act();
-        controller.update(0.4f);
+        controller.collectAction(commands);
 
-        assertTrue(tank.hasFinishedMovement());
-        assertEquals(new GridPoint2(2, 1), tank.getCoordinates());
+        assertTrue(commands.isEmpty());
     }
 
-    private static class FixedDirectionStrategy implements MovementStrategy {
+    private static class FixedMoveStrategy implements ActionStrategy {
         private Direction direction;
 
-        private FixedDirectionStrategy(Direction direction) {
+        private FixedMoveStrategy(Direction direction) {
             this.direction = direction;
         }
 
         @Override
-        public Direction chooseDirection() {
-            return direction;
+        public Command createAction(Tank tank, LogicalLevel level) {
+            return new MoveCommand(tank, level, direction);
         }
     }
 }
