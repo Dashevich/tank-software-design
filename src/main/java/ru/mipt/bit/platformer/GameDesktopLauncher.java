@@ -9,30 +9,31 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
-import ru.mipt.bit.platformer.control.MovementStrategy;
-import ru.mipt.bit.platformer.control.PlayerMovementStrategy;
-import ru.mipt.bit.platformer.control.RandomAiMovementStrategy;
+import ru.mipt.bit.platformer.control.ActionStrategy;
+import ru.mipt.bit.platformer.control.PlayerActionStrategy;
+import ru.mipt.bit.platformer.control.RandomAiActionStrategy;
 import ru.mipt.bit.platformer.control.TankController;
-import ru.mipt.bit.platformer.graphics.Drawable;
 import ru.mipt.bit.platformer.graphics.GameFieldGraphics;
-import ru.mipt.bit.platformer.graphics.TankGraphics;
-import ru.mipt.bit.platformer.graphics.TreeGraphics;
+import ru.mipt.bit.platformer.graphics.LevelGraphics;
+import ru.mipt.bit.platformer.input.Command;
 import ru.mipt.bit.platformer.input.GdxKeyboard;
 import ru.mipt.bit.platformer.input.KeyboardHandler;
 import ru.mipt.bit.platformer.input.MoveCommand;
+import ru.mipt.bit.platformer.input.ShootCommand;
 import ru.mipt.bit.platformer.level.FileLevelGenerator;
 import ru.mipt.bit.platformer.level.Level;
 import ru.mipt.bit.platformer.level.LevelGenerator;
 import ru.mipt.bit.platformer.level.RandomLevelGenerator;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.GameField;
-import ru.mipt.bit.platformer.model.Obstacle;
+import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 import ru.mipt.bit.platformer.model.Tree;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -44,8 +45,12 @@ public class GameDesktopLauncher implements ApplicationListener {
     private static final int WINDOW_WIDTH = GameField.WIDTH * TILE_SIZE_PX;
     private static final int WINDOW_HEIGHT = GameField.HEIGHT * TILE_SIZE_PX;
     private static final float TANK_MOVEMENT_SPEED = 0.4f;
+    private static final int TANK_HEALTH = 1;
+    private static final int BULLET_DAMAGE = 1;
+    private static final float BULLET_SPEED = 0.15f;
     private static final float TREE_ROTATION = 0f;
     private static final float BACKGROUND_BLUE = 0.2f;
+    private static final float AI_SHOOT_CHANCE = 0.2f;
     private static final String LEVEL_FILE = "/level.txt";
     private static final String RANDOM_LEVEL_ARG = "random";
     private static final int RANDOM_OBSTACLE_COUNT = 10;
@@ -53,11 +58,10 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     private LevelGenerator levelGenerator;
     private Batch batch;
-    private GameField gameField;
-    private List<Obstacle> obstacles;
+    private LogicalLevel logicalLevel;
     private List<TankController> tankControllers;
     private GameFieldGraphics gameFieldGraphics;
-    private List<Drawable> drawables;
+    private LevelGraphics levelGraphics;
     private KeyboardHandler keyboardHandler;
 
     public GameDesktopLauncher(LevelGenerator levelGenerator) {
@@ -67,25 +71,33 @@ public class GameDesktopLauncher implements ApplicationListener {
     @Override
     public void create() {
         batch = new SpriteBatch();
-
-        gameField = new GameField(GameField.WIDTH, GameField.HEIGHT);
         gameFieldGraphics = new GameFieldGraphics("level.tmx", batch, Interpolation.smooth);
 
-        Level level = levelGenerator.generate();
-        obstacles = new ArrayList<Obstacle>();
-        drawables = new ArrayList<Drawable>();
+        logicalLevel = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        levelGraphics = new LevelGraphics(
+                "images/tank_blue.png",
+                "images/greenTree.png",
+                "images/brick.png",
+                TREE_ROTATION,
+                gameFieldGraphics.getTileMovement(),
+                gameFieldGraphics.getGroundLayer()
+        );
+        logicalLevel.addListener(levelGraphics);
+
         tankControllers = new ArrayList<TankController>();
+        Level level = levelGenerator.generate();
 
         for (GridPoint2 treeCoordinates : level.getTreeCoordinates()) {
-            addTree(treeCoordinates);
+            logicalLevel.add(new Tree(treeCoordinates));
         }
 
-        Tank playerTank = addTank(level.getPlayerStart(), new PlayerMovementStrategy());
+        Tank playerTank = addTank(level.getPlayerStart(), new PlayerActionStrategy());
         bindPlayerControls(playerTank);
 
         Random aiRandom = new Random();
+        ActionStrategy aiStrategy = new RandomAiActionStrategy(aiRandom, AI_SHOOT_CHANCE);
         for (GridPoint2 aiStart : level.getAiTankStarts()) {
-            addTank(aiStart, new RandomAiMovementStrategy(aiRandom));
+            addTank(aiStart, aiStrategy);
         }
     }
 
@@ -94,18 +106,22 @@ public class GameDesktopLauncher implements ApplicationListener {
         Gdx.gl.glClearColor(0f, 0f, BACKGROUND_BLUE, 1f);
         Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
 
-        keyboardHandler.handle();
-        float deltaTime = Gdx.graphics.getDeltaTime();
+        List<Command> commands = new ArrayList<Command>();
+        keyboardHandler.collect(commands);
         for (TankController controller : tankControllers) {
-            controller.act();
-            controller.update(deltaTime);
+            controller.collectAction(commands);
         }
+
+        for (Command command : commands) {
+            command.execute();
+        }
+
+        logicalLevel.tick(Gdx.graphics.getDeltaTime());
+        removeDeadControllers();
 
         gameFieldGraphics.render();
         batch.begin();
-        for (Drawable drawable : drawables) {
-            drawable.draw(batch);
-        }
+        levelGraphics.draw(batch);
         batch.end();
     }
 
@@ -126,9 +142,7 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void dispose() {
-        for (Drawable drawable : drawables) {
-            drawable.dispose();
-        }
+        levelGraphics.dispose();
         gameFieldGraphics.dispose();
         batch.dispose();
     }
@@ -162,30 +176,29 @@ public class GameDesktopLauncher implements ApplicationListener {
         );
     }
 
-    private Tank addTank(GridPoint2 start, MovementStrategy strategy) {
-        Tank tank = new Tank(start, TANK_MOVEMENT_SPEED);
-        obstacles.add(tank);
-        drawables.add(new TankGraphics("images/tank_blue.png", tank, gameFieldGraphics.getTileMovement()));
-        tankControllers.add(new TankController(tank, strategy, gameField, obstacles));
+    private Tank addTank(GridPoint2 start, ActionStrategy strategy) {
+        Tank tank = new Tank(start, TANK_MOVEMENT_SPEED, TANK_HEALTH, BULLET_DAMAGE, BULLET_SPEED);
+        logicalLevel.add(tank);
+        tankControllers.add(new TankController(tank, strategy, logicalLevel));
         return tank;
     }
 
     private void bindPlayerControls(Tank playerTank) {
         keyboardHandler = new KeyboardHandler(new GdxKeyboard());
-        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.UP), Input.Keys.UP, Input.Keys.W);
-        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
-        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
-        keyboardHandler.bind(new MoveCommand(playerTank, gameField, obstacles, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
+        keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.UP), Input.Keys.UP, Input.Keys.W);
+        keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
+        keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
+        keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
+        keyboardHandler.bind(new ShootCommand(playerTank, logicalLevel), Input.Keys.SPACE);
     }
 
-    private void addTree(GridPoint2 coordinates) {
-        Tree tree = new Tree(coordinates);
-        obstacles.add(tree);
-        drawables.add(new TreeGraphics(
-                "images/greenTree.png",
-                tree,
-                gameFieldGraphics.getGroundLayer(),
-                TREE_ROTATION
-        ));
+    private void removeDeadControllers() {
+        Iterator<TankController> iterator = tankControllers.iterator();
+        while (iterator.hasNext()) {
+            TankController controller = iterator.next();
+            if (!logicalLevel.contains(controller.getTank())) {
+                iterator.remove();
+            }
+        }
     }
 }

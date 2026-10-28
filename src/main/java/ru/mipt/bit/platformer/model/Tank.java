@@ -4,7 +4,7 @@ import com.badlogic.gdx.math.GridPoint2;
 
 import java.util.List;
 
-public class Tank implements Movable, Controllable, Obstacle {
+public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shootable {
 
     private static final float FINISHED_MOVEMENT_PROGRESS = 1f;
     private static final float FLOAT_EQUALITY_THRESHOLD = 0.000001f;
@@ -12,14 +12,26 @@ public class Tank implements Movable, Controllable, Obstacle {
     private GridPoint2 coordinates;
     private GridPoint2 destinationCoordinates;
     private float movementProgress = FINISHED_MOVEMENT_PROGRESS;
-    private float rotation;
+    private Direction orientation;
     private float movementSpeed;
+    private int health;
+    private int bulletDamage;
+    private float bulletSpeed;
 
-    public Tank(GridPoint2 startCoordinates, float movementSpeed) {
+    public Tank(
+            GridPoint2 startCoordinates,
+            float movementSpeed,
+            int health,
+            int bulletDamage,
+            float bulletSpeed
+    ) {
         destinationCoordinates = new GridPoint2(startCoordinates);
         coordinates = new GridPoint2(destinationCoordinates);
-        rotation = Direction.RIGHT.getRotation();
+        orientation = Direction.RIGHT;
         this.movementSpeed = movementSpeed;
+        this.health = health;
+        this.bulletDamage = bulletDamage;
+        this.bulletSpeed = bulletSpeed;
     }
 
     @Override
@@ -39,7 +51,23 @@ public class Tank implements Movable, Controllable, Obstacle {
 
     @Override
     public float getRotation() {
-        return rotation;
+        return orientation.getRotation();
+    }
+
+    public Direction getOrientation() {
+        return orientation;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public boolean isDestroyed() {
+        return health <= 0;
+    }
+
+    public void takeDamage(int damage) {
+        health -= damage;
     }
 
     public boolean hasFinishedMovement() {
@@ -59,11 +87,29 @@ public class Tank implements Movable, Controllable, Obstacle {
         if (!hasFinishedMovement()) {
             return;
         }
-        rotation = direction.getRotation();
+        orientation = direction;
         GridPoint2 nextCoordinates = direction.nextCoordinates(coordinates);
         if (bounds.contains(nextCoordinates) && !isOccupiedByOthers(nextCoordinates, obstacles)) {
             destinationCoordinates.set(nextCoordinates);
             movementProgress = 0f;
+        }
+    }
+
+    @Override
+    public void shoot(LogicalLevel level) {
+        GridPoint2 spawnPoint = orientation.nextCoordinates(coordinates);
+        if (!level.getBounds().contains(spawnPoint)) {
+            return;
+        }
+        Bullet bullet = new Bullet(level, this, spawnPoint, orientation, bulletDamage, bulletSpeed);
+        level.add(bullet);
+    }
+
+    @Override
+    public void live(float deltaTime) {
+        movementProgress = continueProgress(movementProgress, deltaTime, movementSpeed);
+        if (hasFinishedMovement()) {
+            coordinates.set(destinationCoordinates);
         }
     }
 
@@ -77,13 +123,6 @@ public class Tank implements Movable, Controllable, Obstacle {
             }
         }
         return false;
-    }
-
-    public void update(float deltaTime) {
-        movementProgress = continueProgress(movementProgress, deltaTime, movementSpeed);
-        if (hasFinishedMovement()) {
-            coordinates.set(destinationCoordinates);
-        }
     }
 
     private static float continueProgress(float previousProgress, float deltaTime, float speed) {
