@@ -14,12 +14,14 @@ import ru.mipt.bit.platformer.control.PlayerActionStrategy;
 import ru.mipt.bit.platformer.control.RandomAiActionStrategy;
 import ru.mipt.bit.platformer.control.TankController;
 import ru.mipt.bit.platformer.graphics.GameFieldGraphics;
+import ru.mipt.bit.platformer.graphics.HealthBarsToggle;
 import ru.mipt.bit.platformer.graphics.LevelGraphics;
 import ru.mipt.bit.platformer.input.Command;
 import ru.mipt.bit.platformer.input.GdxKeyboard;
 import ru.mipt.bit.platformer.input.KeyboardHandler;
 import ru.mipt.bit.platformer.input.MoveCommand;
 import ru.mipt.bit.platformer.input.ShootCommand;
+import ru.mipt.bit.platformer.input.ToggleHealthBarsCommand;
 import ru.mipt.bit.platformer.level.FileLevelGenerator;
 import ru.mipt.bit.platformer.level.Level;
 import ru.mipt.bit.platformer.level.LevelGenerator;
@@ -45,12 +47,13 @@ public class GameDesktopLauncher implements ApplicationListener {
     private static final int WINDOW_WIDTH = GameField.WIDTH * TILE_SIZE_PX;
     private static final int WINDOW_HEIGHT = GameField.HEIGHT * TILE_SIZE_PX;
     private static final float TANK_MOVEMENT_SPEED = 0.4f;
-    private static final int TANK_HEALTH = 1;
-    private static final int BULLET_DAMAGE = 1;
+    private static final int MIN_TANK_HEALTH = 80;
+    private static final int MAX_TANK_HEALTH = 100;
+    private static final int BULLET_DAMAGE = 25;
     private static final float BULLET_SPEED = 0.15f;
     private static final float TREE_ROTATION = 0f;
     private static final float BACKGROUND_BLUE = 0.2f;
-    private static final float AI_SHOOT_CHANCE = 0.2f;
+    private static final float AI_SHOOT_CHANCE = 0.01f;
     private static final String LEVEL_FILE = "/level.txt";
     private static final String RANDOM_LEVEL_ARG = "random";
     private static final int RANDOM_OBSTACLE_COUNT = 10;
@@ -62,7 +65,9 @@ public class GameDesktopLauncher implements ApplicationListener {
     private List<TankController> tankControllers;
     private GameFieldGraphics gameFieldGraphics;
     private LevelGraphics levelGraphics;
+    private HealthBarsToggle healthBarsToggle;
     private KeyboardHandler keyboardHandler;
+    private Random random = new Random();
 
     public GameDesktopLauncher(LevelGenerator levelGenerator) {
         this.levelGenerator = levelGenerator;
@@ -72,15 +77,17 @@ public class GameDesktopLauncher implements ApplicationListener {
     public void create() {
         batch = new SpriteBatch();
         gameFieldGraphics = new GameFieldGraphics("level.tmx", batch, Interpolation.smooth);
+        healthBarsToggle = new HealthBarsToggle();
 
         logicalLevel = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
         levelGraphics = new LevelGraphics(
                 "images/tank_blue.png",
                 "images/greenTree.png",
-                "images/brick.png",
+                "images/bullet.png",
                 TREE_ROTATION,
                 gameFieldGraphics.getTileMovement(),
-                gameFieldGraphics.getGroundLayer()
+                gameFieldGraphics.getGroundLayer(),
+                healthBarsToggle
         );
         logicalLevel.addListener(levelGraphics);
 
@@ -177,10 +184,14 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     private Tank addTank(GridPoint2 start, ActionStrategy strategy) {
-        Tank tank = new Tank(start, TANK_MOVEMENT_SPEED, TANK_HEALTH, BULLET_DAMAGE, BULLET_SPEED);
+        Tank tank = new Tank(start, TANK_MOVEMENT_SPEED, randomHealth(), BULLET_DAMAGE, BULLET_SPEED);
         logicalLevel.add(tank);
         tankControllers.add(new TankController(tank, strategy, logicalLevel));
         return tank;
+    }
+
+    private int randomHealth() {
+        return MIN_TANK_HEALTH + random.nextInt(MAX_TANK_HEALTH - MIN_TANK_HEALTH + 1);
     }
 
     private void bindPlayerControls(Tank playerTank) {
@@ -189,7 +200,8 @@ public class GameDesktopLauncher implements ApplicationListener {
         keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
         keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.DOWN), Input.Keys.DOWN, Input.Keys.S);
         keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.RIGHT), Input.Keys.RIGHT, Input.Keys.D);
-        keyboardHandler.bind(new ShootCommand(playerTank, logicalLevel), Input.Keys.SPACE);
+        keyboardHandler.bindOnce(new ShootCommand(playerTank, logicalLevel), Input.Keys.SPACE);
+        keyboardHandler.bindOnce(new ToggleHealthBarsCommand(healthBarsToggle), Input.Keys.L);
     }
 
     private void removeDeadControllers() {

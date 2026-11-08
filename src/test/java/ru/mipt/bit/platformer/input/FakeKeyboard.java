@@ -6,17 +6,31 @@ import java.util.Set;
 public class FakeKeyboard implements Keyboard {
 
     private Set<Integer> pressedKeys = new HashSet<Integer>();
+    private Set<Integer> justPressedKeys = new HashSet<Integer>();
 
     public void press(int keyCode) {
+        if (!pressedKeys.contains(keyCode)) {
+            justPressedKeys.add(keyCode);
+        }
         pressedKeys.add(keyCode);
     }
 
     public void release(int keyCode) {
         pressedKeys.remove(keyCode);
+        justPressedKeys.remove(keyCode);
+    }
+
+    public void clearJustPressed() {
+        justPressedKeys.clear();
     }
 
     @Override
     public boolean isPressed(int keyCode) {
         return pressedKeys.contains(keyCode);
+    }
+
+    @Override
+    public boolean wasJustPressed(int keyCode) {
+        return justPressedKeys.contains(keyCode);
     }
 }
