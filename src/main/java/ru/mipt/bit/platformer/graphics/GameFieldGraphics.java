@@ -18,11 +18,11 @@ public class GameFieldGraphics {
     private TiledMapTileLayer groundLayer;
     private TileMovement tileMovement;
 
-    public GameFieldGraphics(String mapPath, Batch batch) {
+    public GameFieldGraphics(String mapPath, Batch batch, Interpolation interpolation) {
         level = new TmxMapLoader().load(mapPath);
         levelRenderer = createSingleLayerMapRenderer(level, batch);
         groundLayer = getSingleLayer(level);
-        tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
+        tileMovement = new TileMovement(groundLayer, interpolation);
     }
 
     public TiledMapTileLayer getGroundLayer() {

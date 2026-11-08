@@ -14,10 +14,11 @@ import static org.junit.Assert.assertTrue;
 public class TankTest {
 
     private static final GameField FIELD = new GameField(GameField.WIDTH, GameField.HEIGHT);
+    private static final float MOVEMENT_SPEED = 0.4f;
 
     @Test
     public void startsIdleAtGivenCell() {
-        Tank tank = new Tank(new GridPoint2(1, 1));
+        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
 
         assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
@@ -27,9 +28,9 @@ public class TankTest {
 
     @Test
     public void tryMoveChangesDestinationAndRotation() {
-        Tank tank = new Tank(new GridPoint2(1, 1));
+        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
 
-        tank.tryMove(Direction.UP, FIELD, Collections.<Tree>emptyList());
+        tank.tryMove(Direction.UP, FIELD, Collections.<Obstacle>emptyList());
 
         assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(1, 2), tank.getDestinationCoordinates());
@@ -39,12 +40,12 @@ public class TankTest {
     }
 
     @Test
-    public void tryMoveOntoTreeOnlyRotates() {
-        Tank tank = new Tank(new GridPoint2(1, 1));
-        List<Tree> trees = new ArrayList<Tree>();
-        trees.add(new Tree(new GridPoint2(1, 2)));
+    public void tryMoveOntoObstacleOnlyRotates() {
+        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        List<Obstacle> obstacles = new ArrayList<Obstacle>();
+        obstacles.add(new OccupiedCell(new GridPoint2(1, 2)));
 
-        tank.tryMove(Direction.UP, FIELD, trees);
+        tank.tryMove(Direction.UP, FIELD, obstacles);
 
         assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
@@ -54,9 +55,9 @@ public class TankTest {
 
     @Test
     public void tryMoveOutsideFieldOnlyRotates() {
-        Tank tank = new Tank(new GridPoint2(0, 1));
+        Tank tank = new Tank(new GridPoint2(0, 1), MOVEMENT_SPEED);
 
-        tank.tryMove(Direction.LEFT, FIELD, Collections.<Tree>emptyList());
+        tank.tryMove(Direction.LEFT, FIELD, Collections.<Obstacle>emptyList());
 
         assertEquals(new GridPoint2(0, 1), tank.getCoordinates());
         assertEquals(new GridPoint2(0, 1), tank.getDestinationCoordinates());
@@ -66,11 +67,11 @@ public class TankTest {
 
     @Test
     public void tryMoveIgnoredWhileMoving() {
-        Tank tank = new Tank(new GridPoint2(1, 1));
-        List<Tree> trees = Collections.emptyList();
-        tank.tryMove(Direction.RIGHT, FIELD, trees);
+        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        List<Obstacle> obstacles = Collections.emptyList();
+        tank.tryMove(Direction.RIGHT, FIELD, obstacles);
 
-        tank.tryMove(Direction.UP, FIELD, trees);
+        tank.tryMove(Direction.UP, FIELD, obstacles);
 
         assertEquals(new GridPoint2(2, 1), tank.getDestinationCoordinates());
         assertEquals(0f, tank.getRotation(), 0.000001f);
@@ -78,8 +79,8 @@ public class TankTest {
 
     @Test
     public void updateAdvancesProgressAndFinishesMovement() {
-        Tank tank = new Tank(new GridPoint2(1, 1));
-        tank.tryMove(Direction.RIGHT, FIELD, Collections.<Tree>emptyList());
+        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
 
         tank.update(0.2f);
 
@@ -90,5 +91,29 @@ public class TankTest {
 
         assertTrue(tank.hasFinishedMovement());
         assertEquals(new GridPoint2(2, 1), tank.getCoordinates());
+    }
+
+    @Test
+    public void slowerSpeedTakesLongerToFinishMovement() {
+        Tank tank = new Tank(new GridPoint2(1, 1), 0.8f);
+        tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
+
+        tank.update(0.2f);
+
+        assertEquals(0.25f, tank.getMovementProgress(), 0.000001f);
+        assertFalse(tank.hasFinishedMovement());
+    }
+
+    private static class OccupiedCell implements Obstacle {
+        private GridPoint2 cell;
+
+        private OccupiedCell(GridPoint2 cell) {
+            this.cell = cell;
+        }
+
+        @Override
+        public boolean occupies(GridPoint2 point) {
+            return cell.equals(point);
+        }
     }
 }
