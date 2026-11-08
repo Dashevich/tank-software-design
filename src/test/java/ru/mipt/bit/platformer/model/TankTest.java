@@ -30,6 +30,34 @@ public class TankTest {
         assertTrue(tank.occupies(new GridPoint2(1, 1)));
         assertFalse(tank.occupies(new GridPoint2(2, 1)));
         assertEquals(HEALTH, tank.getHealth());
+        assertEquals(HEALTH, tank.getMaxHealth());
+    }
+
+    @Test
+    public void maxHealthStaysAfterDamage() {
+        Tank tank = tankAt(1, 1);
+
+        tank.takeDamage(1);
+
+        assertEquals(0, tank.getHealth());
+        assertEquals(HEALTH, tank.getMaxHealth());
+    }
+
+    @Test
+    public void gettersReturnIndependentCoordinateCopies() {
+        Tank tank = tankAt(1, 1);
+        tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
+
+        GridPoint2 coordinates = tank.getCoordinates();
+        GridPoint2 destination = tank.getDestinationCoordinates();
+        coordinates.add(5, 5);
+        destination.add(7, 7);
+
+        assertEquals(new GridPoint2(1, 1), tank.getCoordinates());
+        assertEquals(new GridPoint2(2, 1), tank.getDestinationCoordinates());
+        assertTrue(tank.occupies(new GridPoint2(1, 1)));
+        assertTrue(tank.occupies(new GridPoint2(2, 1)));
+        assertFalse(tank.occupies(new GridPoint2(6, 6)));
     }
 
     @Test

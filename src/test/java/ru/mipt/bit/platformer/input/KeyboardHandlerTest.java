@@ -77,6 +77,22 @@ public class KeyboardHandlerTest {
         assertEquals(Direction.DOWN, tank.getOrientation());
     }
 
+    @Test
+    public void bindOnceFiresOnlyOnJustPressed() {
+        FakeKeyboard keyboard = new FakeKeyboard();
+        RecordingCommand command = new RecordingCommand();
+        KeyboardHandler handler = new KeyboardHandler(keyboard);
+        handler.bindOnce(command, Input.Keys.L);
+
+        keyboard.press(Input.Keys.L);
+        handler.handle();
+        assertEquals(1, command.calls);
+
+        keyboard.clearJustPressed();
+        handler.handle();
+        assertEquals(1, command.calls);
+    }
+
     private static class RecordingCommand implements Command {
         private int calls;
 
