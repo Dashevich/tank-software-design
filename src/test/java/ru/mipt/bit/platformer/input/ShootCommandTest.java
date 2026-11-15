@@ -9,6 +9,7 @@ import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ShootCommandTest {
@@ -29,5 +30,38 @@ public class ShootCommandTest {
             }
         }
         assertTrue(hasBullet);
+    }
+
+    @Test
+    public void executeDoesNothingForRemovedTank() {
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), 0.4f, 1, 1, 0.15f);
+        level.add(tank);
+        level.remove(tank);
+
+        new ShootCommand(tank, level).execute();
+
+        assertFalse(hasBullet(level));
+    }
+
+    @Test
+    public void executeDoesNothingForDestroyedTank() {
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), 0.4f, 1, 1, 0.15f);
+        level.add(tank);
+        tank.takeDamage(1);
+
+        new ShootCommand(tank, level).execute();
+
+        assertFalse(hasBullet(level));
+    }
+
+    private static boolean hasBullet(LogicalLevel level) {
+        for (LevelEntity entity : level.getEntities()) {
+            if (entity instanceof Bullet) {
+                return true;
+            }
+        }
+        return false;
     }
 }

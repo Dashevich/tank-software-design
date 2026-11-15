@@ -93,6 +93,20 @@ public class KeyboardHandlerTest {
         assertEquals(1, command.calls);
     }
 
+    @Test
+    public void clearBindingsRemovesPreviousCommands() {
+        FakeKeyboard keyboard = new FakeKeyboard();
+        RecordingCommand command = new RecordingCommand();
+        KeyboardHandler handler = new KeyboardHandler(keyboard);
+        handler.bind(command, Input.Keys.W);
+        handler.clearBindings();
+
+        keyboard.press(Input.Keys.W);
+        handler.handle();
+
+        assertEquals(0, command.calls);
+    }
+
     private static class RecordingCommand implements Command {
         private int calls;
 

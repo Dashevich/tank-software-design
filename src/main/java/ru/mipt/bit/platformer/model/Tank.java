@@ -4,7 +4,10 @@ import com.badlogic.gdx.math.GridPoint2;
 
 import java.util.List;
 
-public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shootable, HasHealth {
+/**
+ * Domain. Entity: tank.
+ */
+public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shootable, HasHealth, CollidesWithBullet {
 
     private static final float FINISHED_MOVEMENT_PROGRESS = 1f;
     private static final float FLOAT_EQUALITY_THRESHOLD = 0.000001f;
@@ -18,6 +21,7 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
     private int health;
     private int bulletDamage;
     private float bulletSpeed;
+    private TankState state;
 
     public Tank(
             GridPoint2 startCoordinates,
@@ -34,6 +38,7 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
         this.health = health;
         this.bulletDamage = bulletDamage;
         this.bulletSpeed = bulletSpeed;
+        this.state = HealthBasedTankStateSelector.select(1f);
     }
 
     @Override
@@ -60,6 +65,14 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
         return orientation;
     }
 
+    public TankState getState() {
+        return state;
+    }
+
+    public void setState(TankState state) {
+        this.state = state;
+    }
+
     @Override
     public int getHealth() {
         return health;
@@ -76,6 +89,7 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
 
     public void takeDamage(int damage) {
         health -= damage;
+        refreshStateFromHealth();
     }
 
     public boolean hasFinishedMovement() {
@@ -92,7 +106,7 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
 
     @Override
     public void tryMove(Direction direction, Bounds bounds, List<Obstacle> obstacles) {
-        if (!hasFinishedMovement()) {
+        if (isDestroyed() || !hasFinishedMovement()) {
             return;
         }
         orientation = direction;
@@ -105,6 +119,9 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
 
     @Override
     public void shoot(LogicalLevel level) {
+        if (isDestroyed() || !level.contains(this) || !state.canShoot()) {
+            return;
+        }
         GridPoint2 spawnPoint = orientation.nextCoordinates(coordinates);
         if (!level.getBounds().contains(spawnPoint)) {
             return;
@@ -114,11 +131,25 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
     }
 
     @Override
+    public void onHitBy(Bullet bullet, LogicalLevel level) {
+        takeDamage(bullet.getDamage());
+        if (isDestroyed()) {
+            level.remove(this);
+        }
+    }
+
+    @Override
     public void live(float deltaTime) {
-        movementProgress = continueProgress(movementProgress, deltaTime, movementSpeed);
+        float movementDuration = movementSpeed * state.movementDurationFactor();
+        movementProgress = continueProgress(movementProgress, deltaTime, movementDuration);
         if (hasFinishedMovement()) {
             coordinates.set(destinationCoordinates);
         }
+    }
+
+    private void refreshStateFromHealth() {
+        float ratio = maxHealth <= 0 ? 0f : (float) health / (float) maxHealth;
+        state = HealthBasedTankStateSelector.select(ratio);
     }
 
     private boolean isOccupiedByOthers(GridPoint2 coordinates, List<Obstacle> obstacles) {

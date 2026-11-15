@@ -1,0 +1,22 @@
+package ru.mipt.bit.platformer.model;
+
+/**
+ * Domain. Medium tank state.
+ */
+public final class MediumTankState implements TankState {
+
+    public static final MediumTankState INSTANCE = new MediumTankState();
+
+    private MediumTankState() {
+    }
+
+    @Override
+    public float movementDurationFactor() {
+        return 2f;
+    }
+
+    @Override
+    public boolean canShoot() {
+        return true;
+    }
+}

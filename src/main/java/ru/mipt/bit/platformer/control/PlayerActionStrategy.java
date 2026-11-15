@@ -4,6 +4,9 @@ import ru.mipt.bit.platformer.input.Command;
 import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 
+/**
+ * Application. Player uses keyboard; strategy returns nothing.
+ */
 public class PlayerActionStrategy implements ActionStrategy {
 
     @Override

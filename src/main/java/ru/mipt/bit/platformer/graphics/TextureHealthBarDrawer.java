@@ -7,6 +7,9 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Rectangle;
 import ru.mipt.bit.platformer.model.HasHealth;
 
+/**
+ * Adapter. HP bar with a LibGDX texture.
+ */
 public class TextureHealthBarDrawer implements HealthBarDrawer {
 
     private static final float BAR_HEIGHT = 8f;
@@ -30,13 +33,15 @@ public class TextureHealthBarDrawer implements HealthBarDrawer {
         float x = bounds.x + BAR_PADDING_X;
         float y = bounds.y + bounds.height + BAR_OFFSET_Y;
         Texture pixelTexture = pixelTexture();
-        Color previous = batch.getColor();
-
-        batch.setColor(Color.DARK_GRAY);
-        batch.draw(pixelTexture, x, y, barWidth, BAR_HEIGHT);
-        batch.setColor(healthColor(ratio));
-        batch.draw(pixelTexture, x, y, barWidth * ratio, BAR_HEIGHT);
-        batch.setColor(previous);
+        float previousColor = batch.getPackedColor();
+        try {
+            batch.setColor(Color.DARK_GRAY);
+            batch.draw(pixelTexture, x, y, barWidth, BAR_HEIGHT);
+            batch.setColor(healthColor(ratio));
+            batch.draw(pixelTexture, x, y, barWidth * ratio, BAR_HEIGHT);
+        } finally {
+            batch.setPackedColor(previousColor);
+        }
     }
 
     @Override

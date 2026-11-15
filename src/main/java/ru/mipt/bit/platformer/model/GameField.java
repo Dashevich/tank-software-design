@@ -2,6 +2,9 @@ package ru.mipt.bit.platformer.model;
 
 import com.badlogic.gdx.math.GridPoint2;
 
+/**
+ * Domain. Field size and bounds.
+ */
 public class GameField implements Bounds {
 
     public static final int WIDTH = 10;

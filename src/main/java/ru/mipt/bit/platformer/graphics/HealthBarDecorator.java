@@ -3,6 +3,9 @@ package ru.mipt.bit.platformer.graphics;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import ru.mipt.bit.platformer.model.HasHealth;
 
+/**
+ * Adapter / Application. Draws object, then HP on top.
+ */
 public class HealthBarDecorator implements Drawable {
 
     private Drawable delegate;

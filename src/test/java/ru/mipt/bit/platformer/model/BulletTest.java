@@ -101,6 +101,21 @@ public class BulletTest {
     }
 
     @Test
+    public void disappearsOnUnknownObstacle() {
+        LogicalLevel level = new LogicalLevel(FIELD);
+        Tank shooter = new Tank(new GridPoint2(1, 1), TANK_SPEED, 1, 1, BULLET_SPEED);
+        Obstacle wall = new SolidObstacle(new GridPoint2(2, 1));
+        level.add(shooter);
+        level.add(new ObstacleEntity(wall));
+
+        shooter.shoot(level);
+        level.tick(0.01f);
+
+        assertFalse(hasBullet(level));
+        assertTrue(level.contains(shooter));
+    }
+
+    @Test
     public void bulletsDestroyEachOtherOnSameCell() {
         LogicalLevel level = new LogicalLevel(FIELD);
         Tank left = new Tank(new GridPoint2(1, 1), TANK_SPEED, 1, 1, BULLET_SPEED);
@@ -155,5 +170,35 @@ public class BulletTest {
             }
         }
         throw new AssertionError("Bullet not found");
+    }
+
+    private static class SolidObstacle implements Obstacle {
+        private GridPoint2 cell;
+
+        private SolidObstacle(GridPoint2 cell) {
+            this.cell = cell;
+        }
+
+        @Override
+        public boolean occupies(GridPoint2 point) {
+            return cell.equals(point);
+        }
+    }
+
+    private static class ObstacleEntity implements LevelEntity, Obstacle {
+        private Obstacle obstacle;
+
+        private ObstacleEntity(Obstacle obstacle) {
+            this.obstacle = obstacle;
+        }
+
+        @Override
+        public boolean occupies(GridPoint2 point) {
+            return obstacle.occupies(point);
+        }
+
+        @Override
+        public void live(float deltaTime) {
+        }
     }
 }
