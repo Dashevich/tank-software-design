@@ -22,6 +22,7 @@ public class LevelGraphics implements LevelListener {
     private float treeRotation;
     private TileMovement tileMovement;
     private TiledMapTileLayer groundLayer;
+    private HealthBarsToggle healthBarsToggle;
     private Map<LevelEntity, Drawable> drawables = new LinkedHashMap<LevelEntity, Drawable>();
 
     public LevelGraphics(
@@ -30,7 +31,8 @@ public class LevelGraphics implements LevelListener {
             String bulletTexturePath,
             float treeRotation,
             TileMovement tileMovement,
-            TiledMapTileLayer groundLayer
+            TiledMapTileLayer groundLayer,
+            HealthBarsToggle healthBarsToggle
     ) {
         this.tankTexturePath = tankTexturePath;
         this.treeTexturePath = treeTexturePath;
@@ -38,6 +40,7 @@ public class LevelGraphics implements LevelListener {
         this.treeRotation = treeRotation;
         this.tileMovement = tileMovement;
         this.groundLayer = groundLayer;
+        this.healthBarsToggle = healthBarsToggle;
     }
 
     @Override
@@ -72,7 +75,9 @@ public class LevelGraphics implements LevelListener {
 
     private Drawable createDrawable(LevelEntity entity) {
         if (entity instanceof Tank) {
-            return new TankGraphics(tankTexturePath, (Tank) entity, tileMovement);
+            Tank tank = (Tank) entity;
+            TankGraphics tankGraphics = new TankGraphics(tankTexturePath, tank, tileMovement);
+            return new HealthBarDecorator(tankGraphics, tankGraphics, tank, healthBarsToggle);
         }
         if (entity instanceof Tree) {
             return new TreeGraphics(treeTexturePath, (Tree) entity, groundLayer, treeRotation);

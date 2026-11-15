@@ -12,7 +12,7 @@ public class Tree implements LevelEntity, Obstacle, Positioned {
 
     @Override
     public GridPoint2 getCoordinates() {
-        return coordinates;
+        return new GridPoint2(coordinates);
     }
 
     @Override

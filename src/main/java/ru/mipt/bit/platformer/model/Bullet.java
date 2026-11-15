@@ -35,12 +35,12 @@ public class Bullet implements LevelEntity, Obstacle, Movable {
 
     @Override
     public GridPoint2 getCoordinates() {
-        return coordinates;
+        return new GridPoint2(coordinates);
     }
 
     @Override
     public GridPoint2 getDestinationCoordinates() {
-        return destinationCoordinates;
+        return new GridPoint2(destinationCoordinates);
     }
 
     @Override
@@ -83,7 +83,9 @@ public class Bullet implements LevelEntity, Obstacle, Movable {
         }
         if (hasFinishedMovement()) {
             startFlightToNextCell();
-            return;
+            if (!level.contains(this) || hasFinishedMovement()) {
+                return;
+            }
         }
         movementProgress = continueProgress(movementProgress, deltaTime, movementSpeed);
         if (hasFinishedMovement()) {

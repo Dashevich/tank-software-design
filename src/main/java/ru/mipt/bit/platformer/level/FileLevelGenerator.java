@@ -36,6 +36,7 @@ public class FileLevelGenerator implements LevelGenerator {
     @Override
     public Level generate() {
         List<String> lines = readLines();
+        validateSize(lines);
         GridPoint2 playerStart = null;
         List<GridPoint2> treeCoordinates = new ArrayList<GridPoint2>();
 
@@ -64,6 +65,17 @@ public class FileLevelGenerator implements LevelGenerator {
 
         List<GridPoint2> aiTankStarts = placeAiTanks(playerStart, treeCoordinates);
         return new Level(playerStart, treeCoordinates, aiTankStarts);
+    }
+
+    private void validateSize(List<String> lines) {
+        if (lines.size() > height) {
+            throw new IllegalArgumentException("Level is too tall");
+        }
+        for (String line : lines) {
+            if (line.length() > width) {
+                throw new IllegalArgumentException("Level is too wide");
+            }
+        }
     }
 
     private List<GridPoint2> placeAiTanks(GridPoint2 playerStart, List<GridPoint2> treeCoordinates) {

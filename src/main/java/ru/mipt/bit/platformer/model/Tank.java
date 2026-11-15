@@ -4,7 +4,7 @@ import com.badlogic.gdx.math.GridPoint2;
 
 import java.util.List;
 
-public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shootable {
+public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shootable, HasHealth {
 
     private static final float FINISHED_MOVEMENT_PROGRESS = 1f;
     private static final float FLOAT_EQUALITY_THRESHOLD = 0.000001f;
@@ -14,6 +14,7 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
     private float movementProgress = FINISHED_MOVEMENT_PROGRESS;
     private Direction orientation;
     private float movementSpeed;
+    private int maxHealth;
     private int health;
     private int bulletDamage;
     private float bulletSpeed;
@@ -29,6 +30,7 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
         coordinates = new GridPoint2(destinationCoordinates);
         orientation = Direction.RIGHT;
         this.movementSpeed = movementSpeed;
+        this.maxHealth = health;
         this.health = health;
         this.bulletDamage = bulletDamage;
         this.bulletSpeed = bulletSpeed;
@@ -36,12 +38,12 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
 
     @Override
     public GridPoint2 getCoordinates() {
-        return coordinates;
+        return new GridPoint2(coordinates);
     }
 
     @Override
     public GridPoint2 getDestinationCoordinates() {
-        return destinationCoordinates;
+        return new GridPoint2(destinationCoordinates);
     }
 
     @Override
@@ -58,8 +60,14 @@ public class Tank implements LevelEntity, Movable, Controllable, Obstacle, Shoot
         return orientation;
     }
 
+    @Override
     public int getHealth() {
         return health;
+    }
+
+    @Override
+    public int getMaxHealth() {
+        return maxHealth;
     }
 
     public boolean isDestroyed() {

@@ -17,6 +17,18 @@ public class TreeTest {
     }
 
     @Test
+    public void getterReturnsIndependentCoordinateCopy() {
+        Tree tree = new Tree(new GridPoint2(1, 3));
+
+        GridPoint2 coordinates = tree.getCoordinates();
+        coordinates.add(4, 4);
+
+        assertEquals(new GridPoint2(1, 3), tree.getCoordinates());
+        assertTrue(tree.occupies(new GridPoint2(1, 3)));
+        assertFalse(tree.occupies(new GridPoint2(5, 7)));
+    }
+
+    @Test
     public void occupiesOwnCell() {
         Tree tree = new Tree(new GridPoint2(1, 3));
 

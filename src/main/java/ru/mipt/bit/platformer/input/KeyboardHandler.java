@@ -13,12 +13,16 @@ public class KeyboardHandler {
     }
 
     public void bind(Command command, int... keys) {
-        bindings.add(new Binding(command, keys));
+        bindings.add(new Binding(command, keys, false));
+    }
+
+    public void bindOnce(Command command, int... keys) {
+        bindings.add(new Binding(command, keys, true));
     }
 
     public void collect(List<Command> commands) {
         for (Binding binding : bindings) {
-            if (isAnyKeyPressed(binding.keys)) {
+            if (isTriggered(binding)) {
                 commands.add(binding.command);
             }
         }
@@ -32,6 +36,13 @@ public class KeyboardHandler {
         }
     }
 
+    private boolean isTriggered(Binding binding) {
+        if (binding.once) {
+            return wasAnyKeyJustPressed(binding.keys);
+        }
+        return isAnyKeyPressed(binding.keys);
+    }
+
     private boolean isAnyKeyPressed(int[] keys) {
         for (int key : keys) {
             if (keyboard.isPressed(key)) {
@@ -41,13 +52,24 @@ public class KeyboardHandler {
         return false;
     }
 
+    private boolean wasAnyKeyJustPressed(int[] keys) {
+        for (int key : keys) {
+            if (keyboard.wasJustPressed(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static class Binding {
         private Command command;
         private int[] keys;
+        private boolean once;
 
-        private Binding(Command command, int[] keys) {
+        private Binding(Command command, int[] keys, boolean once) {
             this.command = command;
             this.keys = keys;
+            this.once = once;
         }
     }
 }

@@ -47,6 +47,29 @@ public class BulletTest {
     }
 
     @Test
+    public void fliesTowardTreeThenDisappearsWithoutPassingIt() {
+        LogicalLevel level = new LogicalLevel(FIELD);
+        Tank shooter = new Tank(new GridPoint2(1, 1), TANK_SPEED, 1, 1, BULLET_SPEED);
+        Tree nearTree = new Tree(new GridPoint2(3, 1));
+        level.add(shooter);
+        level.add(nearTree);
+
+        shooter.shoot(level);
+        Bullet bullet = findBullet(level);
+        level.tick(0.01f);
+
+        assertTrue(level.contains(bullet));
+        assertEquals(new GridPoint2(2, 1), bullet.getCoordinates());
+        assertEquals(new GridPoint2(3, 1), bullet.getDestinationCoordinates());
+        assertTrue(bullet.getMovementProgress() < 1f);
+
+        level.tick(BULLET_SPEED);
+
+        assertFalse(hasBullet(level));
+        assertTrue(level.contains(nearTree));
+    }
+
+    @Test
     public void startsMovingTowardNextCellWhenPathIsClear() {
         LogicalLevel level = new LogicalLevel(FIELD);
         Tank shooter = new Tank(new GridPoint2(1, 1), TANK_SPEED, 1, 1, BULLET_SPEED);

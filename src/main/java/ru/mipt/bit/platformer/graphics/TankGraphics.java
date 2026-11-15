@@ -10,7 +10,7 @@ import ru.mipt.bit.platformer.util.TileMovement;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
 
-public class TankGraphics implements Drawable {
+public class TankGraphics implements BoundedDrawable {
 
     private Texture texture;
     private TextureRegion graphics;
@@ -35,6 +35,11 @@ public class TankGraphics implements Drawable {
                 movable.getMovementProgress()
         );
         drawTextureRegionUnscaled(batch, graphics, rectangle, movable.getRotation());
+    }
+
+    @Override
+    public Rectangle getBounds() {
+        return rectangle;
     }
 
     @Override

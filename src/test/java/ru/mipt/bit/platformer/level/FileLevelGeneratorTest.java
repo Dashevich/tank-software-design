@@ -92,6 +92,25 @@ public class FileLevelGeneratorTest {
         generate("_X_\n___\n", 100);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void rejectsLevelWiderThanField() {
+        generate("_______X\n________\n", 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void rejectsLevelTallerThanField() {
+        generate(
+                "______\n"
+                        + "______\n"
+                        + "______\n"
+                        + "______\n"
+                        + "______\n"
+                        + "______\n"
+                        + "_X____\n",
+                0
+        );
+    }
+
     private static Level generate(String content, int aiTankCount) {
         return new FileLevelGenerator(
                 new StringReader(content),
