@@ -10,10 +10,12 @@ public class Level {
 
     private GridPoint2 playerStart;
     private List<GridPoint2> treeCoordinates;
+    private List<GridPoint2> aiTankStarts;
 
-    public Level(GridPoint2 playerStart, List<GridPoint2> treeCoordinates) {
+    public Level(GridPoint2 playerStart, List<GridPoint2> treeCoordinates, List<GridPoint2> aiTankStarts) {
         this.playerStart = new GridPoint2(playerStart);
         this.treeCoordinates = new ArrayList<GridPoint2>(treeCoordinates);
+        this.aiTankStarts = new ArrayList<GridPoint2>(aiTankStarts);
     }
 
     public GridPoint2 getPlayerStart() {
@@ -22,5 +24,9 @@ public class Level {
 
     public List<GridPoint2> getTreeCoordinates() {
         return Collections.unmodifiableList(treeCoordinates);
+    }
+
+    public List<GridPoint2> getAiTankStarts() {
+        return Collections.unmodifiableList(aiTankStarts);
     }
 }

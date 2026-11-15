@@ -24,6 +24,8 @@ public class TankTest {
         assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
         assertEquals(0f, tank.getRotation(), 0.000001f);
         assertTrue(tank.hasFinishedMovement());
+        assertTrue(tank.occupies(new GridPoint2(1, 1)));
+        assertFalse(tank.occupies(new GridPoint2(2, 1)));
     }
 
     @Test
@@ -37,6 +39,16 @@ public class TankTest {
         assertEquals(90f, tank.getRotation(), 0.000001f);
         assertFalse(tank.hasFinishedMovement());
         assertEquals(0f, tank.getMovementProgress(), 0.000001f);
+    }
+
+    @Test
+    public void occupiesBothCellsWhileMoving() {
+        Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        tank.tryMove(Direction.RIGHT, FIELD, Collections.<Obstacle>emptyList());
+
+        assertTrue(tank.occupies(new GridPoint2(1, 1)));
+        assertTrue(tank.occupies(new GridPoint2(2, 1)));
+        assertFalse(tank.occupies(new GridPoint2(3, 1)));
     }
 
     @Test
@@ -66,6 +78,38 @@ public class TankTest {
     }
 
     @Test
+    public void cannotEnterDestinationCellOfMovingTank() {
+        Tank moving = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        Tank other = new Tank(new GridPoint2(3, 1), MOVEMENT_SPEED);
+        List<Obstacle> obstacles = new ArrayList<Obstacle>();
+        obstacles.add(moving);
+        obstacles.add(other);
+
+        moving.tryMove(Direction.RIGHT, FIELD, obstacles);
+        other.tryMove(Direction.LEFT, FIELD, obstacles);
+
+        assertEquals(new GridPoint2(2, 1), moving.getDestinationCoordinates());
+        assertEquals(new GridPoint2(3, 1), other.getDestinationCoordinates());
+        assertTrue(other.hasFinishedMovement());
+    }
+
+    @Test
+    public void cannotEnterStartCellOfMovingTank() {
+        Tank moving = new Tank(new GridPoint2(2, 1), MOVEMENT_SPEED);
+        Tank other = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
+        List<Obstacle> obstacles = new ArrayList<Obstacle>();
+        obstacles.add(moving);
+        obstacles.add(other);
+
+        moving.tryMove(Direction.RIGHT, FIELD, obstacles);
+        other.tryMove(Direction.RIGHT, FIELD, obstacles);
+
+        assertEquals(new GridPoint2(3, 1), moving.getDestinationCoordinates());
+        assertEquals(new GridPoint2(1, 1), other.getDestinationCoordinates());
+        assertTrue(other.hasFinishedMovement());
+    }
+
+    @Test
     public void tryMoveIgnoredWhileMoving() {
         Tank tank = new Tank(new GridPoint2(1, 1), MOVEMENT_SPEED);
         List<Obstacle> obstacles = Collections.emptyList();
@@ -91,6 +135,8 @@ public class TankTest {
 
         assertTrue(tank.hasFinishedMovement());
         assertEquals(new GridPoint2(2, 1), tank.getCoordinates());
+        assertTrue(tank.occupies(new GridPoint2(2, 1)));
+        assertFalse(tank.occupies(new GridPoint2(1, 1)));
     }
 
     @Test

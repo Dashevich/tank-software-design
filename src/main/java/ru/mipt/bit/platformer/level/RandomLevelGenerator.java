@@ -12,15 +12,18 @@ public class RandomLevelGenerator implements LevelGenerator {
     private int width;
     private int height;
     private int obstacleCount;
+    private int aiTankCount;
     private Random random;
 
-    public RandomLevelGenerator(int width, int height, int obstacleCount, Random random) {
-        if (obstacleCount < 0 || obstacleCount >= width * height) {
-            throw new IllegalArgumentException("Too many obstacles: " + obstacleCount);
+    public RandomLevelGenerator(int width, int height, int obstacleCount, int aiTankCount, Random random) {
+        int reservedCells = obstacleCount + aiTankCount + 1;
+        if (obstacleCount < 0 || aiTankCount < 0 || reservedCells > width * height) {
+            throw new IllegalArgumentException("Too many objects");
         }
         this.width = width;
         this.height = height;
         this.obstacleCount = obstacleCount;
+        this.aiTankCount = aiTankCount;
         this.random = random;
     }
 
@@ -29,8 +32,10 @@ public class RandomLevelGenerator implements LevelGenerator {
         List<GridPoint2> cells = allCells();
         Collections.shuffle(cells, random);
         GridPoint2 playerStart = cells.get(0);
-        List<GridPoint2> treeCoordinates = cells.subList(1, obstacleCount + 1);
-        return new Level(playerStart, treeCoordinates);
+        int treesEnd = 1 + obstacleCount;
+        List<GridPoint2> treeCoordinates = cells.subList(1, treesEnd);
+        List<GridPoint2> aiTankStarts = cells.subList(treesEnd, treesEnd + aiTankCount);
+        return new Level(playerStart, treeCoordinates, aiTankStarts);
     }
 
     private List<GridPoint2> allCells() {

@@ -4,7 +4,7 @@ import com.badlogic.gdx.math.GridPoint2;
 
 import java.util.List;
 
-public class Tank implements Movable, Controllable {
+public class Tank implements Movable, Controllable, Obstacle {
 
     private static final float FINISHED_MOVEMENT_PROGRESS = 1f;
     private static final float FLOAT_EQUALITY_THRESHOLD = 0.000001f;
@@ -47,20 +47,31 @@ public class Tank implements Movable, Controllable {
     }
 
     @Override
+    public boolean occupies(GridPoint2 point) {
+        if (coordinates.equals(point)) {
+            return true;
+        }
+        return !hasFinishedMovement() && destinationCoordinates.equals(point);
+    }
+
+    @Override
     public void tryMove(Direction direction, Bounds bounds, List<Obstacle> obstacles) {
         if (!hasFinishedMovement()) {
             return;
         }
         rotation = direction.getRotation();
         GridPoint2 nextCoordinates = direction.nextCoordinates(coordinates);
-        if (bounds.contains(nextCoordinates) && !isOccupied(nextCoordinates, obstacles)) {
+        if (bounds.contains(nextCoordinates) && !isOccupiedByOthers(nextCoordinates, obstacles)) {
             destinationCoordinates.set(nextCoordinates);
             movementProgress = 0f;
         }
     }
 
-    private static boolean isOccupied(GridPoint2 coordinates, List<Obstacle> obstacles) {
+    private boolean isOccupiedByOthers(GridPoint2 coordinates, List<Obstacle> obstacles) {
         for (Obstacle obstacle : obstacles) {
+            if (obstacle == this) {
+                continue;
+            }
             if (obstacle.occupies(coordinates)) {
                 return true;
             }
