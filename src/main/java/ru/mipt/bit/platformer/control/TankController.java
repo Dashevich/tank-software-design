@@ -1,9 +1,7 @@
 package ru.mipt.bit.platformer.control;
 
-import ru.mipt.bit.platformer.input.MoveCommand;
-import ru.mipt.bit.platformer.model.Bounds;
-import ru.mipt.bit.platformer.model.Direction;
-import ru.mipt.bit.platformer.model.Obstacle;
+import ru.mipt.bit.platformer.input.Command;
+import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 
 import java.util.List;
@@ -11,29 +9,26 @@ import java.util.List;
 public class TankController {
 
     private Tank tank;
-    private MovementStrategy strategy;
-    private Bounds bounds;
-    private List<Obstacle> obstacles;
+    private ActionStrategy strategy;
+    private LogicalLevel level;
 
-    public TankController(Tank tank, MovementStrategy strategy, Bounds bounds, List<Obstacle> obstacles) {
+    public TankController(Tank tank, ActionStrategy strategy, LogicalLevel level) {
         this.tank = tank;
         this.strategy = strategy;
-        this.bounds = bounds;
-        this.obstacles = obstacles;
+        this.level = level;
     }
 
     public Tank getTank() {
         return tank;
     }
 
-    public void act() {
-        Direction direction = strategy.chooseDirection();
-        if (direction != null) {
-            new MoveCommand(tank, bounds, obstacles, direction).execute();
+    public void collectAction(List<Command> commands) {
+        if (!level.contains(tank)) {
+            return;
         }
-    }
-
-    public void update(float deltaTime) {
-        tank.update(deltaTime);
+        Command command = strategy.createAction(tank, level);
+        if (command != null) {
+            commands.add(command);
+        }
     }
 }

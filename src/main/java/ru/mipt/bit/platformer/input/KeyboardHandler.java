@@ -16,11 +16,19 @@ public class KeyboardHandler {
         bindings.add(new Binding(command, keys));
     }
 
-    public void handle() {
+    public void collect(List<Command> commands) {
         for (Binding binding : bindings) {
             if (isAnyKeyPressed(binding.keys)) {
-                binding.command.execute();
+                commands.add(binding.command);
             }
+        }
+    }
+
+    public void handle() {
+        List<Command> commands = new ArrayList<Command>();
+        collect(commands);
+        for (Command command : commands) {
+            command.execute();
         }
     }
 

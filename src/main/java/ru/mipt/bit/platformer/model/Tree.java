@@ -2,7 +2,7 @@ package ru.mipt.bit.platformer.model;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-public class Tree implements Obstacle, Positioned {
+public class Tree implements LevelEntity, Obstacle, Positioned {
 
     private GridPoint2 coordinates;
 
@@ -18,5 +18,9 @@ public class Tree implements Obstacle, Positioned {
     @Override
     public boolean occupies(GridPoint2 point) {
         return coordinates.equals(point);
+    }
+
+    @Override
+    public void live(float deltaTime) {
     }
 }
