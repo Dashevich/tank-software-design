@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Domain. Live level: entities, tick, listeners.
+ */
 public class LogicalLevel {
 
     private Bounds bounds;

@@ -10,6 +10,9 @@ import ru.mipt.bit.platformer.util.TileMovement;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
 
+/**
+ * Adapter. Bullet sprite.
+ */
 public class BulletGraphics implements Drawable {
 
     private Texture texture;

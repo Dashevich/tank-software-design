@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Adapter. Builds a random map.
+ */
 public class RandomLevelGenerator implements LevelGenerator {
 
     private int width;

@@ -4,6 +4,9 @@ import ru.mipt.bit.platformer.input.Command;
 import ru.mipt.bit.platformer.model.LogicalLevel;
 import ru.mipt.bit.platformer.model.Tank;
 
+/**
+ * Port. How to pick the next tank action.
+ */
 public interface ActionStrategy {
 
     Command createAction(Tank tank, LogicalLevel level);

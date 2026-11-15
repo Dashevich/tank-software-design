@@ -14,6 +14,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Adapter. Listens to the level and draws objects.
+ */
 public class LevelGraphics implements LevelListener {
 
     private String tankTexturePath;

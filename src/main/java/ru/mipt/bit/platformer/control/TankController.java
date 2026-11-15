@@ -6,6 +6,9 @@ import ru.mipt.bit.platformer.model.Tank;
 
 import java.util.List;
 
+/**
+ * Application. Asks strategy and adds a command.
+ */
 public class TankController {
 
     private Tank tank;

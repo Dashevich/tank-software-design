@@ -23,4 +23,18 @@ public class MoveCommandTest {
         assertEquals(new GridPoint2(0, 1), tank.getDestinationCoordinates());
         assertEquals(Direction.LEFT, tank.getOrientation());
     }
+
+    @Test
+    public void executeDoesNothingForRemovedTank() {
+        LogicalLevel level = new LogicalLevel(new GameField(GameField.WIDTH, GameField.HEIGHT));
+        Tank tank = new Tank(new GridPoint2(1, 1), 0.4f, 1, 1, 0.15f);
+        level.add(tank);
+        level.remove(tank);
+        MoveCommand command = new MoveCommand(tank, level, Direction.LEFT);
+
+        command.execute();
+
+        assertEquals(new GridPoint2(1, 1), tank.getDestinationCoordinates());
+        assertEquals(Direction.RIGHT, tank.getOrientation());
+    }
 }

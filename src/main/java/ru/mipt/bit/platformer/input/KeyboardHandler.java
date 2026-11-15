@@ -3,6 +3,9 @@ package ru.mipt.bit.platformer.input;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Application. Collects commands from keys.
+ */
 public class KeyboardHandler {
 
     private Keyboard keyboard;
@@ -18,6 +21,10 @@ public class KeyboardHandler {
 
     public void bindOnce(Command command, int... keys) {
         bindings.add(new Binding(command, keys, true));
+    }
+
+    public void clearBindings() {
+        bindings.clear();
     }
 
     public void collect(List<Command> commands) {

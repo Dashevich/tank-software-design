@@ -4,13 +4,9 @@ import com.badlogic.gdx.math.GridPoint2;
 import org.junit.Test;
 
 import java.io.StringReader;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class FileLevelGeneratorTest {
@@ -24,19 +20,17 @@ public class FileLevelGeneratorTest {
                     + "__\n";
     private static final int WIDTH = 6;
     private static final int HEIGHT = 6;
-    private static final int AI_TANK_COUNT = 2;
-    private static final long SEED = 42L;
 
     @Test
     public void readsPlayerStartCountingRowsFromBottom() {
-        Level level = generate(EXAMPLE_LEVEL, AI_TANK_COUNT);
+        Level level = generate(EXAMPLE_LEVEL);
 
         assertEquals(new GridPoint2(1, 1), level.getPlayerStart());
     }
 
     @Test
     public void readsAllTrees() {
-        Level level = generate(EXAMPLE_LEVEL, AI_TANK_COUNT);
+        Level level = generate(EXAMPLE_LEVEL);
         List<GridPoint2> trees = level.getTreeCoordinates();
 
         assertEquals(15, trees.size());
@@ -48,23 +42,15 @@ public class FileLevelGeneratorTest {
     }
 
     @Test
-    public void placesAiTanksOnFreeCells() {
-        Level level = generate(EXAMPLE_LEVEL, AI_TANK_COUNT);
+    public void doesNotPlaceAiTanks() {
+        Level level = generate(EXAMPLE_LEVEL);
 
-        assertEquals(AI_TANK_COUNT, level.getAiTankStarts().size());
-
-        Set<GridPoint2> taken = new HashSet<GridPoint2>();
-        taken.add(level.getPlayerStart());
-        taken.addAll(level.getTreeCoordinates());
-        for (GridPoint2 aiTank : level.getAiTankStarts()) {
-            assertFalse(taken.contains(aiTank));
-            taken.add(aiTank);
-        }
+        assertTrue(level.getAiTankStarts().isEmpty());
     }
 
     @Test
     public void ignoresSurroundingWhitespaceAndBlankLines() {
-        Level level = generate("_T_ \n\n_X_  \n", 0);
+        Level level = generate("_T_ \n\n_X_  \n");
 
         assertEquals(new GridPoint2(1, 0), level.getPlayerStart());
         assertEquals(1, level.getTreeCoordinates().size());
@@ -74,27 +60,22 @@ public class FileLevelGeneratorTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void rejectsLevelWithoutPlayer() {
-        generate("_T_\n___\n", 0);
+        generate("_T_\n___\n");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void rejectsLevelWithSeveralPlayers() {
-        generate("X__\n__X\n", 0);
+        generate("X__\n__X\n");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void rejectsUnknownCell() {
-        generate("_X_\n_#_\n", 0);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void rejectsTooManyAiTanks() {
-        generate("_X_\n___\n", 100);
+        generate("_X_\n_#_\n");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void rejectsLevelWiderThanField() {
-        generate("_______X\n________\n", 0);
+        generate("_______X\n________\n");
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -106,18 +87,11 @@ public class FileLevelGeneratorTest {
                         + "______\n"
                         + "______\n"
                         + "______\n"
-                        + "_X____\n",
-                0
+                        + "_X____\n"
         );
     }
 
-    private static Level generate(String content, int aiTankCount) {
-        return new FileLevelGenerator(
-                new StringReader(content),
-                WIDTH,
-                HEIGHT,
-                aiTankCount,
-                new Random(SEED)
-        ).generate();
+    private static Level generate(String content) {
+        return new FileLevelGenerator(new StringReader(content), WIDTH, HEIGHT).generate();
     }
 }

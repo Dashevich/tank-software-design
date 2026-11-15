@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Domain. Level data: player, trees, AI starts.
+ */
 public class Level {
 
     private GridPoint2 playerStart;

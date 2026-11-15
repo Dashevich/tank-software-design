@@ -9,6 +9,9 @@ import ru.mipt.bit.platformer.model.Tank;
 
 import java.util.Random;
 
+/**
+ * Application / Adapter. Simple AI: random move or shoot.
+ */
 public class RandomAiActionStrategy implements ActionStrategy {
 
     private static final Direction[] DIRECTIONS = Direction.values();

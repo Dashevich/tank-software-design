@@ -11,6 +11,9 @@ import ru.mipt.bit.platformer.util.TileMovement;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createSingleLayerMapRenderer;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.getSingleLayer;
 
+/**
+ * Adapter. LibGDX tile map background.
+ */
 public class GameFieldGraphics {
 
     private TiledMap level;

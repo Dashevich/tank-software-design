@@ -187,6 +187,30 @@ public class TankTest {
         assertEquals(1, level.getEntities().size());
     }
 
+    @Test
+    public void shootDoesNothingWhenTankIsRemovedFromLevel() {
+        LogicalLevel level = new LogicalLevel(FIELD);
+        Tank tank = tankAt(1, 1);
+        level.add(tank);
+        level.remove(tank);
+
+        tank.shoot(level);
+
+        assertTrue(level.getEntities().isEmpty());
+    }
+
+    @Test
+    public void shootDoesNothingWhenTankIsDestroyed() {
+        LogicalLevel level = new LogicalLevel(FIELD);
+        Tank tank = tankAt(1, 1);
+        level.add(tank);
+        tank.takeDamage(HEALTH);
+
+        tank.shoot(level);
+
+        assertEquals(1, level.getEntities().size());
+    }
+
     private static Tank tankAt(int x, int y) {
         return new Tank(new GridPoint2(x, y), MOVEMENT_SPEED, HEALTH, BULLET_DAMAGE, BULLET_SPEED);
     }

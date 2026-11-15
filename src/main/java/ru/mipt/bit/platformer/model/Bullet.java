@@ -2,7 +2,10 @@ package ru.mipt.bit.platformer.model;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-public class Bullet implements LevelEntity, Obstacle, Movable {
+/**
+ * Domain. Entity: bullet.
+ */
+public class Bullet implements LevelEntity, Obstacle, Movable, CollidesWithBullet {
 
     private static final float FINISHED_MOVEMENT_PROGRESS = 1f;
     private static final float FLOAT_EQUALITY_THRESHOLD = 0.000001f;
@@ -94,6 +97,11 @@ public class Bullet implements LevelEntity, Obstacle, Movable {
         }
     }
 
+    @Override
+    public void onHitBy(Bullet bullet, LogicalLevel level) {
+        level.remove(this);
+    }
+
     private void startFlightToNextCell() {
         GridPoint2 next = direction.nextCoordinates(coordinates);
         if (!level.getBounds().contains(next)) {
@@ -106,28 +114,17 @@ public class Bullet implements LevelEntity, Obstacle, Movable {
 
     private boolean resolveCollisionsAt(GridPoint2 point) {
         for (LevelEntity entity : level.entitiesAt(point)) {
-            if (entity == this) {
+            if (entity == this || entity == owner) {
                 continue;
             }
-            if (entity == owner) {
+            if (!(entity instanceof Obstacle)) {
                 continue;
             }
-            if (entity instanceof Tank) {
-                Tank tank = (Tank) entity;
-                tank.takeDamage(damage);
-                if (tank.isDestroyed()) {
-                    level.remove(tank);
-                }
-                level.remove(this);
-                return true;
+            if (entity instanceof CollidesWithBullet) {
+                ((CollidesWithBullet) entity).onHitBy(this, level);
             }
-            if (entity instanceof Tree || entity instanceof Bullet) {
-                level.remove(this);
-                if (entity instanceof Bullet) {
-                    level.remove(entity);
-                }
-                return true;
-            }
+            level.remove(this);
+            return true;
         }
         return false;
     }

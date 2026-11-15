@@ -25,6 +25,7 @@ import ru.mipt.bit.platformer.input.ToggleHealthBarsCommand;
 import ru.mipt.bit.platformer.level.FileLevelGenerator;
 import ru.mipt.bit.platformer.level.Level;
 import ru.mipt.bit.platformer.level.LevelGenerator;
+import ru.mipt.bit.platformer.level.RandomAiTankLevelGenerator;
 import ru.mipt.bit.platformer.level.RandomLevelGenerator;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.GameField;
@@ -41,6 +42,10 @@ import java.util.Random;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 
+/**
+ * Infrastructure. LibGDX entry point: wires parts and runs the loop.
+ * Missing: a clock port (delta comes from Gdx now), and a separate application game-loop service.
+ */
 public class GameDesktopLauncher implements ApplicationListener {
 
     private static final int TILE_SIZE_PX = 128;
@@ -67,6 +72,7 @@ public class GameDesktopLauncher implements ApplicationListener {
     private LevelGraphics levelGraphics;
     private HealthBarsToggle healthBarsToggle;
     private KeyboardHandler keyboardHandler;
+    private Tank playerTank;
     private Random random = new Random();
 
     public GameDesktopLauncher(LevelGenerator levelGenerator) {
@@ -98,8 +104,8 @@ public class GameDesktopLauncher implements ApplicationListener {
             logicalLevel.add(new Tree(treeCoordinates));
         }
 
-        Tank playerTank = addTank(level.getPlayerStart(), new PlayerActionStrategy());
-        bindPlayerControls(playerTank);
+        playerTank = addTank(level.getPlayerStart(), new PlayerActionStrategy());
+        bindPlayerControls();
 
         Random aiRandom = new Random();
         ActionStrategy aiStrategy = new RandomAiActionStrategy(aiRandom, AI_SHOOT_CHANCE);
@@ -124,7 +130,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         }
 
         logicalLevel.tick(Gdx.graphics.getDeltaTime());
-        removeDeadControllers();
+        removeDeadTanks();
 
         gameFieldGraphics.render();
         batch.begin();
@@ -171,11 +177,16 @@ public class GameDesktopLauncher implements ApplicationListener {
                     random
             );
         }
-        return new FileLevelGenerator(
+        LevelGenerator fileLayout = new FileLevelGenerator(
                 new InputStreamReader(
                         GameDesktopLauncher.class.getResourceAsStream(LEVEL_FILE),
                         StandardCharsets.UTF_8
                 ),
+                GameField.WIDTH,
+                GameField.HEIGHT
+        );
+        return new RandomAiTankLevelGenerator(
+                fileLayout,
                 GameField.WIDTH,
                 GameField.HEIGHT,
                 AI_TANK_COUNT,
@@ -194,7 +205,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         return MIN_TANK_HEALTH + random.nextInt(MAX_TANK_HEALTH - MIN_TANK_HEALTH + 1);
     }
 
-    private void bindPlayerControls(Tank playerTank) {
+    private void bindPlayerControls() {
         keyboardHandler = new KeyboardHandler(new GdxKeyboard());
         keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.UP), Input.Keys.UP, Input.Keys.W);
         keyboardHandler.bind(new MoveCommand(playerTank, logicalLevel, Direction.LEFT), Input.Keys.LEFT, Input.Keys.A);
@@ -204,7 +215,12 @@ public class GameDesktopLauncher implements ApplicationListener {
         keyboardHandler.bindOnce(new ToggleHealthBarsCommand(healthBarsToggle), Input.Keys.L);
     }
 
-    private void removeDeadControllers() {
+    private void removeDeadTanks() {
+        if (playerTank != null && !logicalLevel.contains(playerTank)) {
+            keyboardHandler.clearBindings();
+            keyboardHandler.bindOnce(new ToggleHealthBarsCommand(healthBarsToggle), Input.Keys.L);
+            playerTank = null;
+        }
         Iterator<TankController> iterator = tankControllers.iterator();
         while (iterator.hasNext()) {
             TankController controller = iterator.next();

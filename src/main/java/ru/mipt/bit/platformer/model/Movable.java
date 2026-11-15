@@ -2,6 +2,9 @@ package ru.mipt.bit.platformer.model;
 
 import com.badlogic.gdx.math.GridPoint2;
 
+/**
+ * Domain. Moves between cells.
+ */
 public interface Movable extends Positioned {
 
     GridPoint2 getDestinationCoordinates();
